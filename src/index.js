@@ -3,9 +3,11 @@ import Notiflix from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
-const form = document.querySelector('.search-form');
-const gallery = document.querySelector('.gallery');
-const loadMore = document.querySelector('.load-more');
+const refs = {
+  form: document.querySelector('.search-form'),
+  gallery: document.querySelector('.gallery'),
+  loadMoreBtn: document.querySelector('.load-more'),
+};
 
 const key = '33829143-ea8670a872fa68e1952c5f18f';
 const imageType = 'photo';
@@ -22,62 +24,67 @@ const simpleGallery = new SimpleLightbox('.gallery a', {
   captionPosition: 'bottom',
 });
 
-form.addEventListener('submit', onSubmit);
-loadMore.addEventListener('click', loadMoreImages);
+refs.form.addEventListener('submit', onSubmit);
+refs.loadMoreBtn.addEventListener('click', loadMoreImages);
 
-loadMore.classList.add('hidden-btn');
+refs.loadMoreBtn.classList.add('hidden-btn');
 
 function onSubmit(event) {
   event.preventDefault();
-  loadMore.classList.add('hidden-btn');
-  gallery.innerHTML = '';
-  query = event.target.elements.searchQuery.value;
+  refs.loadMoreBtn.classList.add('hidden-btn');
+  refs.gallery.innerHTML = '';
+  query = event.currentTarget.elements.searchQuery.value;
   loadGalery();
 }
 
 async function loadGalery() {
   page = 1;
   totalHits = 0;
-  let url = `${baseUrl}&q=${query}&page=${page}`;
+
   try {
-    
-    let result = await axios.get(url);
-    totalHits += result.data.hits.length;
+    const result = await loadData();
     checkTotalHits(result.data.totalHits);
-    gallery.innerHTML = createMarkup(result.data.hits);
+    refs.gallery.innerHTML = createMarkup(result.data.hits);
     simpleGallery.refresh();
 
-    cardHeight = gallery.firstElementChild.getBoundingClientRect();
+    cardHeight = refs.gallery.firstElementChild.getBoundingClientRect();
     window.scrollBy({
       top: cardHeight.height * (per_page / 4),
       behavior: 'smooth',
     });
-
   } catch (error) {
     console.log(error);
   }
 }
 
 async function loadMoreImages() {
-  page += 1;
-  let url = `${baseUrl}&q=${query}&page=${page}`;
+  refs.loadMoreBtn.setAttribute('disabled', 'disabled');
 
   try {
-    
-    let result = await axios.get(url);
-    totalHits += result.data.hits.length;
+    const result = await loadData();
     checkTotalHits(result.data.totalHits);
-    gallery.insertAdjacentHTML('beforeend', createMarkup(result.data.hits));
+    refs.gallery.insertAdjacentHTML(
+      'beforeend',
+      createMarkup(result.data.hits)
+    );
+    refs.loadMoreBtn.removeAttribute('disabled');
     simpleGallery.refresh();
 
     window.scrollBy({
       top: cardHeight.height * (per_page / 4) + 150,
       behavior: 'smooth',
     });
-
   } catch (error) {
     console.log(error);
   }
+}
+
+async function loadData() {
+  const url = `${baseUrl}&q=${query}&page=${page}`;
+  const result = await axios.get(url);
+  totalHits += result.data.hits.length;
+  page += 1;
+  return result;
 }
 
 function checkTotalHits(dataTotalHits) {
@@ -90,11 +97,11 @@ function checkTotalHits(dataTotalHits) {
       Notiflix.Notify.failure(
         "We're sorry, but you've reached the end of search results."
       );
-      loadMore.classList.add('hidden-btn');
+      refs.loadMoreBtn.classList.add('hidden-btn');
     } else {
       let message = `Hooray! We found ${totalHits} images.`;
       Notiflix.Notify.success(message);
-      loadMore.classList.remove('hidden-btn');
+      refs.loadMoreBtn.classList.remove('hidden-btn');
     }
   }
 }
@@ -104,9 +111,9 @@ function createMarkup(data) {
     .map(
       item =>
         `<div class="photo-card">
-        <a href="${item.largeImageURL}">
-          <img src="${item.webformatURL}" alt="${item.tags}" loading="lazy" />  
-        </a>
+          <a href="${item.largeImageURL}">
+            <img src="${item.webformatURL}" alt="${item.tags}" loading="lazy" />  
+          </a>
           <div class="info">
             <p class="info-item">
               <b>Likes</b>${item.likes}
