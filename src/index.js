@@ -7,6 +7,7 @@ const refs = {
   form: document.querySelector('.search-form'),
   gallery: document.querySelector('.gallery'),
   loadMoreBtn: document.querySelector('.load-more'),
+  guard: document.querySelector('.js-guard'),
 };
 
 const key = '33829143-ea8670a872fa68e1952c5f18f';
@@ -18,6 +19,14 @@ let page;
 let totalHits = 0;
 let cardHeight;
 
+const options = {
+  root: null,
+  rootMargin: '200px',
+  threshold: 1.0,
+}
+
+const observer = new IntersectionObserver(onLoad, options);
+
 const simpleGallery = new SimpleLightbox('.gallery a', {
   captionsData: 'alt',
   captionDelay: 250,
@@ -28,6 +37,16 @@ refs.form.addEventListener('submit', onSubmit);
 refs.loadMoreBtn.addEventListener('click', loadMoreImages);
 
 refs.loadMoreBtn.classList.add('hidden-btn');
+
+function onLoad(entries, observer) {
+  entries.forEach(element => {
+    if (element.isIntersecting) {
+      loadMoreImages();
+    }
+    
+  });
+  console.log(entries);
+}
 
 function onSubmit(event) {
   event.preventDefault();
@@ -47,11 +66,13 @@ async function loadGalery() {
     refs.gallery.innerHTML = createMarkup(result.data.hits);
     simpleGallery.refresh();
 
-    cardHeight = refs.gallery.firstElementChild.getBoundingClientRect();
-    window.scrollBy({
-      top: cardHeight.height * (per_page / 4),
-      behavior: 'smooth',
-    });
+    observer.observe(refs.guard)
+
+    // cardHeight = refs.gallery.firstElementChild.getBoundingClientRect();
+    // window.scrollBy({
+    //   top: cardHeight.height * (per_page / 4),
+    //   behavior: 'smooth',
+    // });
   } catch (error) {
     console.log(error);
   }
@@ -70,10 +91,10 @@ async function loadMoreImages() {
     refs.loadMoreBtn.removeAttribute('disabled');
     simpleGallery.refresh();
 
-    window.scrollBy({
-      top: cardHeight.height * (per_page / 4) + 150,
-      behavior: 'smooth',
-    });
+    // window.scrollBy({
+    //   top: cardHeight.height * (per_page / 4) + 150,
+    //   behavior: 'smooth',
+    // });
   } catch (error) {
     console.log(error);
   }
